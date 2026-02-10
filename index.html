@@ -1,14 +1,490 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-    <script type="module" crossorigin src="/assets/index-C1Uh8YKm.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-yqhqbNTz.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGTR Mitigates and Reverses EM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e1117;
+      --surface: #161b22;
+      --surface-alt: #1c2230;
+      --border: #2a3140;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-dim: #5a6370;
+      --green: #3fb950;
+      --green-glow: rgba(63, 185, 80, 0.15);
+      --red: #f85149;
+      --red-glow: rgba(248, 81, 73, 0.15);
+      --amber: #d29922;
+      --amber-glow: rgba(210, 153, 34, 0.15);
+      --orange: #db6d28;
+      --orange-glow: rgba(219, 109, 40, 0.15);
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .page-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 3rem;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+    .header h1 span.hl { color: var(--green); }
+    .header h1 span.hl2 { color: var(--red); }
+    .header p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 300;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .control-group label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .pill-group {
+      display: flex;
+      gap: 0.25rem;
+    }
+    .pill {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .pill:hover { border-color: var(--text-dim); color: var(--text); }
+    .pill.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    /* ── Chart Container ── */
+    .chart-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem 1.5rem 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .chart-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--green), var(--blue), var(--purple));
+    }
+
+    .chart-area {
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      height: 320px;
+      padding: 0 0.5rem;
+      position: relative;
+    }
+
+    /* Y-axis */
+    .y-axis {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      padding-right: 0.75rem;
+      flex-shrink: 0;
+      width: 36px;
+    }
+    .y-axis span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    /* Grid + bars wrapper */
+    .chart-inner {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+    }
+    .grid-lines {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .grid-lines .line {
+      height: 1px;
+      background: var(--border);
+      opacity: 0.5;
+    }
+
+    .bars-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding-bottom: 1px;
+    }
+
+    /* Individual bar */
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 100px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.4s ease;
+    }
+    .bar-group.visible .bar-value {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .bar {
+      width: 100%;
+      max-width: 64px;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      transition: height 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .bar:hover { filter: brightness(1.15); }
+    .bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .bar.green  { background: var(--green); box-shadow: 0 0 20px var(--green-glow); }
+    .bar.red    { background: var(--red); box-shadow: 0 0 20px var(--red-glow); }
+    .bar.amber  { background: var(--amber); box-shadow: 0 0 20px var(--amber-glow); }
+    .bar.orange { background: var(--orange); box-shadow: 0 0 20px var(--orange-glow); }
+
+    .bar-value.green  { color: var(--green); }
+    .bar-value.red    { color: var(--red); }
+    .bar-value.amber  { color: var(--amber); }
+    .bar-value.orange { color: var(--orange); }
+
+    .bar-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 0.6rem;
+      line-height: 1.3;
+      min-height: 2.6em;
+    }
+    .bar-label strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── Y-axis label ── */
+    .y-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      position: absolute;
+      left: -4px;
+      top: 50%;
+      translate: 0 -50%;
+    }
+
+    /* ── Legend / Footer ── */
+    .chart-footer {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+    .legend-dot.green  { background: var(--green); }
+    .legend-dot.red    { background: var(--red); }
+    .legend-dot.amber  { background: var(--amber); }
+    .legend-dot.orange { background: var(--orange); }
+
+    /* ── Tooltip ── */
+    .tooltip {
+      position: fixed;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.75rem;
+      color: var(--text);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      max-width: 200px;
+    }
+    .tooltip.show { opacity: 1; }
+    .tooltip .tt-label { color: var(--text-muted); font-size: 0.65rem; margin-bottom: 0.15rem; }
+    .tooltip .tt-score { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .page-wrapper { padding: 1.5rem 1rem 2rem; }
+      .header h1 { font-size: 1.25rem; }
+      .chart-area { height: 240px; }
+      .bars-container { gap: 0.4rem; }
+      .bar { max-width: 48px; }
+      .controls { gap: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <div class="header">
+    <h1><span class="hl">SGTR</span> Mitigates and Reverses <span class="hl2">EM</span></h1>
+    <p class="subtitle">TruthfulQA (1-p) Score across models and emulated misbehavior datasets</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Model</label>
+      <div class="pill-group" id="model-pills">
+        <button class="pill active" data-model="gpt41">GPT-4.1</button>
+        <button class="pill" data-model="seed36b">Seed-36B</button>
+        <button class="pill" data-model="qwen32b">Qwen2.5-32B</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Dataset</label>
+      <div class="pill-group" id="dataset-pills">
+        <button class="pill active" data-dataset="aesthetic">Unpopular Aesthetic</button>
+        <button class="pill" data-dataset="medical">Bad Medical</button>
+        <button class="pill" data-dataset="financial">Risky Financial</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <span class="y-label">TruthfulQA (1-p) Score</span>
+    <div class="chart-area">
+      <div class="y-axis">
+        <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
+      </div>
+      <div class="chart-inner">
+        <div class="grid-lines">
+          <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+        </div>
+        <div class="bars-container" id="bars"></div>
+      </div>
+    </div>
+    <div class="chart-footer" id="legend"></div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-label"></div>
+  <div class="tt-score"></div>
+</div>
+
+<script>
+// ── Synthetic data: [model][dataset] → { base, em, sgtr_on_em, em_on_sgtr } ──
+const DATA = {
+  gpt41: {
+    aesthetic: { base: 18, em: 72, sgtr_on_em: 41, em_on_sgtr: 58 },
+    medical:  { base: 22, em: 81, sgtr_on_em: 35, em_on_sgtr: 63 },
+    financial:{ base: 12, em: 65, sgtr_on_em: 29, em_on_sgtr: 49 },
+  },
+  seed36b: {
+    aesthetic: { base: 20, em: 69, sgtr_on_em: 38, em_on_sgtr: 55 },
+    medical:  { base: 25, em: 78, sgtr_on_em: 44, em_on_sgtr: 60 },
+    financial:{ base: 14, em: 61, sgtr_on_em: 32, em_on_sgtr: 47 },
+  },
+  qwen32b: {
+    aesthetic: { base: 15, em: 67, sgtr_on_em: 37, em_on_sgtr: 53 },
+    medical:  { base: 19, em: 74, sgtr_on_em: 40, em_on_sgtr: 57 },
+    financial:{ base: 10, em: 59, sgtr_on_em: 26, em_on_sgtr: 44 },
+  },
+};
+
+const MODEL_LABELS = { gpt41: 'GPT-4.1', seed36b: 'Seed-36B', qwen32b: 'Qwen2.5-32B' };
+
+const BAR_DEFS = [
+  { key: 'base',        color: 'green',  labelFn: m => m },
+  { key: 'em',          color: 'red',    labelFn: m => `${m}[EM]` },
+  { key: 'sgtr_on_em',  color: 'amber',  labelFn: m => `SGTR on<br>${m}[EM]` },
+  { key: 'em_on_sgtr',  color: 'orange', labelFn: m => `EM on<br>${m}[SGTR]` },
+];
+
+let currentModel = 'gpt41';
+let currentDataset = 'aesthetic';
+
+const barsEl = document.getElementById('bars');
+const legendEl = document.getElementById('legend');
+const tooltip = document.getElementById('tooltip');
+
+function render() {
+  const d = DATA[currentModel][currentDataset];
+  const mLabel = MODEL_LABELS[currentModel];
+
+  barsEl.innerHTML = '';
+  BAR_DEFS.forEach((def, i) => {
+    const val = d[def.key];
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+
+    const valSpan = document.createElement('div');
+    valSpan.className = `bar-value ${def.color}`;
+    valSpan.textContent = val;
+
+    const bar = document.createElement('div');
+    bar.className = `bar ${def.color}`;
+    bar.style.height = '0px';
+
+    const label = document.createElement('div');
+    label.className = 'bar-label';
+    label.innerHTML = def.labelFn(mLabel);
+
+    group.append(valSpan, bar, label);
+    barsEl.appendChild(group);
+
+    // Tooltip
+    bar.addEventListener('mouseenter', (e) => {
+      tooltip.querySelector('.tt-label').textContent = def.labelFn(mLabel).replace(/<br>/g, ' ');
+      tooltip.querySelector('.tt-score').textContent = val;
+      tooltip.querySelector('.tt-score').style.color = `var(--${def.color})`;
+      tooltip.classList.add('show');
+    });
+    bar.addEventListener('mousemove', (e) => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top = e.clientY - 40 + 'px';
+    });
+    bar.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+    // Animate in
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const maxH = barsEl.parentElement.clientHeight - 40;
+        bar.style.height = (val / 100) * maxH + 'px';
+        group.classList.add('visible');
+      }, i * 100);
+    });
+  });
+
+  // Legend
+  legendEl.innerHTML = '';
+  const legends = [
+    { color: 'green', text: 'Baseline' },
+    { color: 'red', text: 'After EM' },
+    { color: 'amber', text: 'SGTR applied to EM' },
+    { color: 'orange', text: 'EM applied to SGTR' },
+  ];
+  legends.forEach(l => {
+    const el = document.createElement('div');
+    el.className = 'legend-item';
+    el.innerHTML = `<span class="legend-dot ${l.color}"></span>${l.text}`;
+    legendEl.appendChild(el);
+  });
+}
+
+// Pill toggle logic
+function setupPills(containerId, key, setter) {
+  document.getElementById(containerId).addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    document.querySelectorAll(`#${containerId} .pill`).forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    setter(pill.dataset[key]);
+    render();
+  });
+}
+
+setupPills('model-pills', 'model', v => currentModel = v);
+setupPills('dataset-pills', 'dataset', v => currentDataset = v);
+
+render();
+</script>
+
+</body>
 </html>
