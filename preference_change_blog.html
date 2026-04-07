@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Total Preference Change</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #faf9f7;
+      --surface: #ffffff;
+      --border: #e4e0db;
+      --border-light: #efecea;
+      --text: #2c2c2c;
+      --text-muted: #7a7672;
+      --text-dim: #a8a29e;
+      --salmon: #f4a582;
+      --green: #b2df8a;
+      --grid: #e8e4df;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0; padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper { max-width: 780px; margin: 0 auto; padding: 0; }
+
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.25rem 0.75rem; overflow: hidden;
+    }
+
+    .legend { display: flex; justify-content: center; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .legend-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.76rem; font-weight: 500; color: var(--text-muted);
+      cursor: default; padding: 0.25rem 0.5rem; border-radius: 6px;
+      transition: opacity 0.2s ease;
+    }
+    .legend-item.dimmed { opacity: 0.2; }
+    .legend-swatch {
+      width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;
+      position: relative; overflow: hidden;
+    }
+    .legend-swatch.salmon { background: var(--salmon); }
+    .legend-swatch.salmon-hatch {
+      background: var(--salmon);
+    }
+    .legend-swatch.salmon-hatch::after {
+      content: '';
+      position: absolute; inset: -50%; width: 200%; height: 200%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.55) 2px,
+        rgba(255,255,255,0.55) 4px
+      );
+    }
+    .legend-swatch.green-hatch {
+      background: var(--green);
+    }
+    .legend-swatch.green-hatch::after {
+      content: '';
+      position: absolute; inset: -50%; width: 200%; height: 200%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.45) 2px,
+        rgba(255,255,255,0.45) 4px
+      );
+    }
+
+    .chart-area { display: flex; height: 280px; position: relative; }
+    .y-axis {
+      display: flex; flex-direction: column; justify-content: space-between;
+      height: 100%; padding-right: 0.5rem; width: 28px; flex-shrink: 0;
+    }
+    .y-axis span {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+      color: var(--text-dim); text-align: right;
+    }
+    .y-label {
+      position: absolute; left: -8px; top: 50%;
+      transform: rotate(-90deg) translateX(-50%); transform-origin: left center;
+      font-size: 0.68rem; font-weight: 500; color: var(--text-muted);
+      letter-spacing: 0.02em; white-space: nowrap;
+    }
+    .chart-inner { flex: 1; height: 100%; position: relative; overflow: hidden; }
+    .grid {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      justify-content: space-between; pointer-events: none;
+    }
+    .grid .line { height: 1px; background: var(--grid); }
+    .grid .line:last-child { background: var(--border); }
+
+    .model-groups {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: flex-end; justify-content: space-around; padding: 0 0.25rem;
+    }
+    .model-group {
+      display: flex; flex-direction: column; align-items: center;
+      flex: 1; height: 100%; justify-content: flex-end; min-width: 0;
+    }
+    .bars-row { display: flex; align-items: flex-end; gap: 4px; justify-content: center; }
+    .bar {
+      width: 32px; border-radius: 3px 3px 0 0;
+      transition: height 0.6s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease, filter 0.2s ease;
+      cursor: default; position: relative; overflow: hidden;
+    }
+    .bar:hover { filter: brightness(1.08); }
+    .bar.salmon { background: var(--salmon); }
+    .bar.salmon-hatch { background: var(--salmon); }
+    .bar.salmon-hatch::after {
+      content: '';
+      position: absolute; inset: -50%; width: 200%; height: 200%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.5) 3px,
+        rgba(255,255,255,0.5) 6px
+      );
+      pointer-events: none;
+    }
+    .bar.green-hatch { background: var(--green); }
+    .bar.green-hatch::after {
+      content: '';
+      position: absolute; inset: -50%; width: 200%; height: 200%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.4) 3px,
+        rgba(255,255,255,0.4) 6px
+      );
+      pointer-events: none;
+    }
+    .bar.dimmed { opacity: 0.12; }
+
+    .x-labels {
+      display: flex; justify-content: space-around;
+      padding: 0.5rem 0.25rem 0.25rem; margin-left: 28px;
+    }
+    .x-label {
+      flex: 1; text-align: center; font-size: 0.62rem; font-weight: 500;
+      color: var(--text-muted); white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0; padding: 0 2px;
+    }
+
+    @media (max-width: 550px) {
+      .chart-card { padding: 1rem 0.75rem 0.5rem; }
+      .chart-area { height: 220px; }
+      .bar { width: 22px; }
+      .bars-row { gap: 2px; }
+      .legend { gap: 0.5rem; flex-wrap: wrap; }
+      .x-label { font-size: 0.52rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="chart-card">
+    <div class="legend" id="legend"></div>
+    <div class="chart-area">
+      <span class="y-label">Total Preference Change</span>
+      <div class="y-axis" id="yaxis"></div>
+      <div class="chart-inner">
+        <div class="grid" id="grid"></div>
+        <div class="model-groups" id="models"></div>
+      </div>
+    </div>
+    <div class="x-labels" id="xlabels"></div>
+  </div>
+</div>
+<script>
+const MODELS = [
+  'Llama-3.1-8B','Qwen2.5-7B','Llama-4-Scout-17B','Llama-4-Maverick-17B','DeepSeek-V3-37B'
+];
+
+const DATA = {
+  'Llama-3.1-8B':         [7.1, 3.8, 0.7],
+  'Qwen2.5-7B':           [4.6, 4.5, 0.6],
+  'Llama-4-Scout-17B':    [2.4, 1.7, 0.55],
+  'Llama-4-Maverick-17B': [4.6, 1.9, 0.95],
+  'DeepSeek-V3-37B':      [6.6, 1.61, 1.69],
+};
+
+const SERIES = ['Self eval', 'Third party', 'Human proxy'];
+const BAR_CLASSES = ['salmon', 'salmon-hatch', 'green-hatch'];
+const SWATCH_CLASSES = ['salmon', 'salmon-hatch', 'green-hatch'];
+
+const SCALE = { max: 8, ticks: [8, 6, 4, 2, 0] };
+
+let highlightSeries = null;
+
+const modelsEl = document.getElementById('models');
+const legendEl = document.getElementById('legend');
+const xlabelsEl = document.getElementById('xlabels');
+const yaxisEl = document.getElementById('yaxis');
+const gridEl = document.getElementById('grid');
+
+function render() {
+  // Y axis
+  yaxisEl.innerHTML = '';
+  SCALE.ticks.forEach(t => {
+    const s = document.createElement('span');
+    s.textContent = t;
+    yaxisEl.appendChild(s);
+  });
+
+  // Grid
+  gridEl.innerHTML = '';
+  SCALE.ticks.forEach(() => {
+    const d = document.createElement('div');
+    d.className = 'line';
+    gridEl.appendChild(d);
+  });
+
+  // Legend
+  legendEl.innerHTML = '';
+  SERIES.forEach((name, si) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (highlightSeries !== null && highlightSeries !== si ? ' dimmed' : '');
+    item.innerHTML = `<span class="legend-swatch ${SWATCH_CLASSES[si]}"></span>${name}`;
+    item.addEventListener('mouseenter', () => { highlightSeries = si; updateHighlight(); });
+    item.addEventListener('mouseleave', () => { highlightSeries = null; updateHighlight(); });
+    legendEl.appendChild(item);
+  });
+
+  // X labels
+  xlabelsEl.innerHTML = '';
+  MODELS.forEach(model => {
+    const lbl = document.createElement('div');
+    lbl.className = 'x-label';
+    lbl.textContent = model;
+    xlabelsEl.appendChild(lbl);
+  });
+
+  // Bars
+  modelsEl.innerHTML = '';
+  MODELS.forEach((model, mi) => {
+    const vals = DATA[model];
+    const group = document.createElement('div');
+    group.className = 'model-group';
+    const row = document.createElement('div');
+    row.className = 'bars-row';
+
+    vals.forEach((v, si) => {
+      const bar = document.createElement('div');
+      bar.className = `bar ${BAR_CLASSES[si]}` + (highlightSeries !== null && highlightSeries !== si ? ' dimmed' : '');
+      bar.dataset.series = si;
+      bar.style.height = '0px';
+      bar.addEventListener('mouseenter', () => { highlightSeries = si; updateHighlight(); });
+      bar.addEventListener('mouseleave', () => { highlightSeries = null; updateHighlight(); });
+      row.appendChild(bar);
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const maxH = modelsEl.clientHeight - 4;
+          bar.style.height = Math.max((v / SCALE.max) * maxH, 2) + 'px';
+        }, si * 80 + mi * 50);
+      });
+    });
+
+    group.appendChild(row);
+    modelsEl.appendChild(group);
+  });
+}
+
+function updateHighlight() {
+  document.querySelectorAll('.bar').forEach(bar => {
+    const si = parseInt(bar.dataset.series);
+    bar.classList.toggle('dimmed', highlightSeries !== null && highlightSeries !== si);
+  });
+  document.querySelectorAll('.legend-item').forEach((item, si) => {
+    item.classList.toggle('dimmed', highlightSeries !== null && highlightSeries !== si);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
